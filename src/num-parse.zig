@@ -110,8 +110,15 @@ const NumberChunks = struct {
             else
                 return error.NoNumber;
 
-            // If there is no suffix
-            if (suffix_start == string.len) break :blk .{ 0, string.len };
+            // If there is no suffix, or the suffix is an e-suffix
+            if (suffix_start == string.len) {
+                if (mem.lastIndexOfAny(u8, string, "eE")) |idx| {
+                    if (idx == num_start) return error.NoNumber;
+                    const oom = fmt.parseUnsigned(u8, string[idx + 1 ..], 10) catch |err|
+                        return convertError(err, sign);
+                    break :blk .{ oom, idx };
+                } else break :blk .{ 0, string.len };
+            }
 
             const num_end = mem.indexOfAny(u8, string, allowed_whitespace) orelse suffix_start;
             // Make sure there are no invalid characters between two separate chunks of whitespace
@@ -305,4 +312,23 @@ test "Trailing zeros don't cause overflow" {
 test "Integer and decimal part less then max(T), but their sum is over" {
     try t.expectError(error.Overflow, parseInt(i16, "32.999k"));
     try t.expectError(error.Underflow, parseInt(i16, "-32.999k"));
+}
+
+test "E-suffixes" {
+    try t.expectEqual(123_000, parseInt(i32, "123e3"));
+    try t.expectEqual(-123_000, parseInt(i32, "-123e3"));
+    try t.expectEqual(123_000_000, parseInt(i32, "123e6"));
+    try t.expectEqual(123_000_000, parseInt(i64, "0.123e9"));
+    try t.expectEqual(123, parseInt(i32, "12.3e1"));
+    try t.expectEqual(0, parseInt(i32, "0e200"));
+}
+
+test "Invalid e-suffixes" {
+    try t.expectError(error.InvalidCharacter, parseInt(i32, "123 e3"));
+    try t.expectError(error.InvalidCharacter, parseInt(i32, "123e 3"));
+
+    try t.expectError(error.InvalidCharacter, parseInt(i32, "123e+3"));
+    try t.expectError(error.InvalidCharacter, parseInt(i32, "123e-3"));
+
+    try t.expectError(error.NoNumber, parseInt(i32, "e123"));
 }
