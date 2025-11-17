@@ -12,6 +12,18 @@ const ParseError = error{
     Underflow,
 };
 
+/// Parses `string` as a base 10 integer of type `T`.
+/// Numbers can be written with a decimal dot and a suffix denoting their order
+/// of magnitude.
+///
+/// Three types of suffixes can be used:
+///  * Short suffixes (e.g. "1k", "2M", "3Qa")
+///  * Long suffixes (e.g. "1 thousand", "2 million", "3 quadrillion")
+///  * E-suffixes (scientific/engineering suffixes, e.g "1e3, 2e6, 3e15")
+///
+/// All the suffixes are case insensetive, and short and long ones allow
+/// whitespace between them and the number.
+/// E-suffixes don't allow whitespace and must be positive.
 pub fn parseInt(T: type, string: []const u8) ParseError!T {
     const type_info = switch (@typeInfo(T)) {
         .int => |info| info,
