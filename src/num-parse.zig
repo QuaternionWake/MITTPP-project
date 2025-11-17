@@ -76,7 +76,7 @@ pub fn parseInt(T: type, string: []const u8) ParseError!T {
 
     // Handle case where we're parsing the smallest negative number for T,
     // whose positive counterpart can't fit in T
-    if (result == @as(TempT, @intCast(math.maxInt(T))) + 1) return math.minInt(T);
+    if (result == @as(TempT, @intCast(math.maxInt(T))) + 1 and chunks.sign == .neg) return math.minInt(T);
 
     // Make sure the result can fit into T
     if (result > math.maxInt(T)) return convertError(error.Overflow, chunks.sign);
@@ -236,6 +236,16 @@ test "Parsing limits" {
     try t.expectEqual(127, parseInt(i8, "127"));
     try t.expectEqual(0, parseInt(u8, "0"));
     try t.expectEqual(255, parseInt(u8, "255"));
+
+    try t.expectEqual(127, parseInt(i8, "0.127 k"));
+    try t.expectEqual(127, parseInt(i8, "0.000127000 M"));
+    try t.expectEqual(-127, parseInt(i8, "-0.127 k"));
+    try t.expectEqual(-127, parseInt(i8, "-0.000127000 M"));
+
+    try t.expectEqual(error.Underflow, parseInt(i8, "-129"));
+    try t.expectEqual(error.Overflow, parseInt(i8, "128"));
+    try t.expectEqual(error.Underflow, parseInt(u8, "-1"));
+    try t.expectEqual(error.Overflow, parseInt(u8, "256"));
 }
 
 test "Invalid characters" {
