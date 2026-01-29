@@ -239,13 +239,28 @@ test "Parsing limits" {
 
     try t.expectEqual(127, parseInt(i8, "0.127 k"));
     try t.expectEqual(127, parseInt(i8, "0.000127000 M"));
-    try t.expectEqual(-127, parseInt(i8, "-0.127 k"));
-    try t.expectEqual(-127, parseInt(i8, "-0.000127000 M"));
+    try t.expectEqual(-128, parseInt(i8, "-0.128 k"));
+    try t.expectEqual(-128, parseInt(i8, "-0.000128000 M"));
 
-    try t.expectEqual(error.Underflow, parseInt(i8, "-129"));
-    try t.expectEqual(error.Overflow, parseInt(i8, "128"));
-    try t.expectEqual(error.Underflow, parseInt(u8, "-1"));
-    try t.expectEqual(error.Overflow, parseInt(u8, "256"));
+    try t.expectError(error.Underflow, parseInt(i8, "-129"));
+    try t.expectError(error.Overflow, parseInt(i8, "128"));
+    try t.expectError(error.Underflow, parseInt(u8, "-1"));
+    try t.expectError(error.Overflow, parseInt(u8, "256"));
+
+    try t.expectEqual(32767, parseInt(i16, "32767"));
+    try t.expectEqual(32767, parseInt(i16, "32.767 k"));
+    try t.expectEqual(-32768, parseInt(i16, "-32768"));
+    try t.expectEqual(-32768, parseInt(i16, "-32.768 k"));
+
+    try t.expectError(error.Overflow, parseInt(i16, "32768"));
+    try t.expectError(error.Overflow, parseInt(i16, "32.768 k"));
+    try t.expectError(error.Underflow, parseInt(i16, "-32769"));
+    try t.expectError(error.Underflow, parseInt(i16, "-32.769 k"));
+
+    try t.expectEqual(1023, parseInt(i11, "1023"));
+    try t.expectEqual(-1024, parseInt(i11, "-1024"));
+    try t.expectError(error.Overflow, parseInt(i11, "1024"));
+    try t.expectError(error.Underflow, parseInt(i11, "-1025"));
 }
 
 test "Invalid characters" {
